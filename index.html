@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaPost - Facebook Automation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- FACEBOOK SDK - REQUIRED FOR POSTING -->
+    <!-- Replace YOUR_APP_ID with your actual Facebook App ID -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0&appId=YOUR_APP_ID&autoLogAppEvents=1" nonce="YOUR_NONCE"></script>
+
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg-elevated: #12121a;
+            --card: #1a1a24;
+            --card-hover: #22222e;
+            --border: #2a2a38;
+            --fg: #f0f0f5;
+            --muted: #8888a0;
+            --accent: #1877F2;
+            --accent-hover: #1a8bff;
+            --accent-glow: rgba(24, 119, 242, 0.3);
+            --success: #31a24c;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 { font-family: 'Space Grotesk', sans-serif; }
+
+        .bg-atmosphere {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(24, 119, 242, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(24, 119, 242, 0.05) 0%, transparent 50%),
+                linear-gradient(180deg, var(--bg) 0%, #0d0d14 100%);
+        }
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 70%);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-elevated); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(26, 26, 36, 0.9) 0%, rgba(18, 18, 26, 0.95) 100%);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(24, 119, 242, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(24, 119, 242, 0.1);
+        }
+
+        .input-field {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+            outline: none;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #1565d8 100%);
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--card);
+            color: var(--fg);
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--card-hover);
+            border-color: var(--muted);
+        }
+        
+        .fb-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+        
+        .status-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-atmosphere"></div>
+    <div class="bg-grid"></div>
+
+    <div class="min-h-screen flex">
+        <!-- Sidebar (Same as before) -->
+        <aside class="sidebar w-64 border-r border-[var(--border)] p-6 flex flex-col fixed h-screen bg-[var(--bg-elevated)] bg-opacity-50 backdrop-blur-xl z-50">
+            <div class="flex items-center gap-3 mb-8 opacity-0 animate-slide-up">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[#0d5bbf] flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">MetaPost</h1>
+                    <p class="text-xs text-[var(--muted)]">Automation Tool</p>
+                </div>
+            </div>
+            <!-- Nav items omitted for brevity, functionality same as previous -->
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 p-8">
+            <section id="section-compose" class="max-w-4xl mx-auto">
+                <header class="mb-8 opacity-0 animate-slide-up">
+                    <h2 class="text-3xl font-bold tracking-tight mb-2">Create Post</h2>
+                    <p class="text-[var(--muted)]">Compose and publish to your Facebook page</p>
+                </header>
+
+                <div class="glass-card p-6 opacity-0 animate-slide-up delay-100">
+                    
+                    <!-- Connection Status -->
+                    <div class="fb-status">
+                        <div class="status-dot" id="statusDot"></div>
+                        <div class="flex-1">
+                            <p id="statusText" class="font-medium text-sm">Not Connected</p>
+                            <p class="text-xs text-[var(--muted)]">Connect your account to publish</p>
+                        </div>
+                        <button id="connectBtn" class="btn-primary py-2 px-4 text-sm">
+                            Connect Facebook
+                        </button>
+                    </div>
+
+                    <!-- Editor -->
+                    <div class="bg-[var(--bg)] rounded-xl p-4 mb-4 border border-[var(--border)]">
+                        <textarea 
+                            id="postContent" 
+                            class="w-full bg-transparent border-none outline-none text-[var(--fg)] resize-none min-h-[120px]" 
+                            placeholder="What do you want to share?"
+                        ></textarea>
+                        <div class="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+                            <div class="text-sm text-[var(--muted)]" id="charCounter">0 / 63,206</div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 mt-6">
+                        <button id="publishBtn" class="btn-primary flex-1 opacity-50 cursor-not-allowed" disabled>
+                            <svg class="inline w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                            Publish Now
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span id="toastMessage">Success!</span>
+    </div>
+
+    <script>
+        // 1. STATE MANAGEMENT
+        let isConnected = false;
+        let userProfile = null;
+
+        // 2. DOM ELEMENTS
+        const connectBtn = document.getElementById('connectBtn');
+        const publishBtn = document.getElementById('publishBtn');
+        const postContent = document.getElementById('postContent');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const toast = document.getElementById('toast');
+        const charCounter = document.getElementById('charCounter');
+
+        // 3. FACEBOOK SDK SETUP
+        // This function runs when the Facebook SDK loads
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId      : 'YOUR_APP_ID', // REPLACE THIS WITH YOUR REAL APP ID
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v18.0'
+            });
+            
+            // Check login status on load
+            checkLoginState();
+        };
+
+        // 4. FUNCTIONS
+        
+        function checkLoginState() {
+            FB.getLoginStatus(function(response) {
+                statusChangeCallback(response);
+            });
+        }
+
+        function statusChangeCallback(response) {
+            if (response.status === 'connected') {
+                isConnected = true;
+                // Get user name
+                FB.api('/me', function(response) {
+                    userProfile = response;
+                    updateUI(true, response.name);
+                });
+            } else {
+                isConnected = false;
+                updateUI(false);
+            }
+        }
+
+        function updateUI(connected, name = 'User') {
+            if (connected) {
+                statusDot.classList.add('connected');
+                statusText.textContent = `Connected as ${name}`;
+                connectBtn.textContent = 'Disconnect';
+                connectBtn.classList.remove('btn-primary');
+                connectBtn.classList.add('btn-secondary');
+                publishBtn.disabled = false;
+                publishBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Not Connected';
+                connectBtn.textContent = 'Connect Facebook';
+                connectBtn.classList.add('btn-primary');
+                connectBtn.classList.remove('btn-secondary');
+                publishBtn.disabled = true;
+                publishBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        function showToast(message, success = true) {
+            const toastEl = document.getElementById('toast');
+            const msgEl = document.getElementById('toastMessage');
+            msgEl.textContent = message;
+            toastEl.classList.toggle('success', success);
+            toastEl.classList.add('show');
+            setTimeout(() => toastEl.classList.remove('show'), 3000);
+        }
+
+        // 5. EVENT LISTENERS
+
+        // Connect/Disconnect Button
+        connectBtn.addEventListener('click', () => {
+            if (isConnected) {
+                FB.logout(function(response) {
+                    statusChangeCallback(response);
+                });
+            } else {
+                // 'public_profile' is basic info. 'publish_actions' is needed for posting (requires App Review)
+                FB.login(function(response) {
+                    if (response.authResponse) {
+                        statusChangeCallback(response);
+                    } else {
+                        showToast('Connection cancelled', false);
+                    }
+                }, {scope: 'public_profile,publish_actions'}); 
+            }
+        });
+
+        // Publish Button
+        publishBtn.addEventListener('click', () => {
+            const message = postContent.value;
+            
+            if (!message) {
+                showToast('Please write something first', false);
+                return;
+            }
+
+            // Use Feed Dialog for posting (Works without App Review for testing)
+            // Note: 'publish_actions' is restricted. Using Share dialog is safer for general apps.
+            FB.ui({
+                method: 'share',
+                href: 'https://developers.facebook.com/docs/', // Can be replaced with a link you want to share
+                quote: message // Pre-fill text (Works on mobile/web dialogs)
+            }, function(response){
+                if (response && !response.error_message) {
+                    showToast('Posted to Facebook successfully!');
+                    postContent.value = '';
+                } else {
+                    showToast('Post cancelled or failed', false);
+                }
+            });
+
+            /* 
+               ALTERNATIVE: Direct API Post (Requires approved 'publish_actions' permission)
+               FB.api('/me/feed', 'post', { message: message }, function(response) {
+                 if (!response || response.error) {
+                   showToast('Error posting: ' + response.error.message, false);
+                 } else {
+                   showToast('Posted successfully! Post ID: ' + response.id);
+                 }
+               });
+            */
+        });
+
+        // Character counter
+        postContent.addEventListener('input', (e) => {
+            charCounter.textContent = `${e.target.value.length} / 63,206`;
+        });
+
+    </script>
+</body>
+</html>
