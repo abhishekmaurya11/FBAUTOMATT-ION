@@ -9,9 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- FACEBOOK SDK - REQUIRED FOR POSTING -->
-    <!-- Replace YOUR_APP_ID with your actual Facebook App ID -->
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0&appId=YOUR_APP_ID&autoLogAppEvents=1" nonce="YOUR_NONCE"></script>
+    <!-- FACEBOOK SDK - HARDCODED APP ID -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v18.0&appId=880907771649624&autoLogAppEvents=1" nonce="metaPostNonce"></script>
 
     <style>
         :root {
@@ -63,7 +62,6 @@
             mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 70%);
         }
 
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
@@ -157,11 +155,12 @@
             height: 10px;
             border-radius: 50%;
             background: var(--danger);
+            transition: all 0.3s ease;
         }
         
         .status-dot.connected {
             background: var(--success);
-            box-shadow: 0 0 8px var(--success);
+            box-shadow: 0 0 12px var(--success);
         }
 
         /* Animations */
@@ -191,7 +190,26 @@
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
         
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
         @media (max-width: 768px) {
             .sidebar { display: none; }
         }
@@ -202,7 +220,7 @@
     <div class="bg-grid"></div>
 
     <div class="min-h-screen flex">
-        <!-- Sidebar (Same as before) -->
+        <!-- Sidebar -->
         <aside class="sidebar w-64 border-r border-[var(--border)] p-6 flex flex-col fixed h-screen bg-[var(--bg-elevated)] bg-opacity-50 backdrop-blur-xl z-50">
             <div class="flex items-center gap-3 mb-8 opacity-0 animate-slide-up">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[#0d5bbf] flex items-center justify-center">
@@ -210,10 +228,30 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight">MetaPost</h1>
-                    <p class="text-xs text-[var(--muted)]">Automation Tool</p>
+                    <p class="text-xs text-[var(--muted)]">Live Publisher</p>
                 </div>
             </div>
-            <!-- Nav items omitted for brevity, functionality same as previous -->
+            
+            <!-- Navigation -->
+            <nav class="flex-1 space-y-2 opacity-0 animate-slide-up delay-100">
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)] bg-opacity-10 text-[var(--accent)] font-medium">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Compose
+                </button>
+                <a href="https://developers.facebook.com/apps/880907771649624/dashboard/" target="_blank" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[var(--muted)] hover:bg-[var(--card)] hover:text-[var(--fg)] transition-colors">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Settings
+                </a>
+            </nav>
+
+            <div class="pt-6 border-t border-[var(--border)] opacity-0 animate-slide-up delay-200">
+                 <div class="fb-status flex-col items-start">
+                    <div class="flex items-center gap-2 w-full">
+                        <div class="status-dot" id="statusDotSidebar"></div>
+                        <span id="statusTextSidebar" class="text-xs font-medium text-[var(--muted)]">Checking...</span>
+                    </div>
+                </div>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -221,7 +259,7 @@
             <section id="section-compose" class="max-w-4xl mx-auto">
                 <header class="mb-8 opacity-0 animate-slide-up">
                     <h2 class="text-3xl font-bold tracking-tight mb-2">Create Post</h2>
-                    <p class="text-[var(--muted)]">Compose and publish to your Facebook page</p>
+                    <p class="text-[var(--muted)]">Compose and publish directly to Facebook</p>
                 </header>
 
                 <div class="glass-card p-6 opacity-0 animate-slide-up delay-100">
@@ -231,7 +269,7 @@
                         <div class="status-dot" id="statusDot"></div>
                         <div class="flex-1">
                             <p id="statusText" class="font-medium text-sm">Not Connected</p>
-                            <p class="text-xs text-[var(--muted)]">Connect your account to publish</p>
+                            <p class="text-xs text-[var(--muted)]">Login required to publish</p>
                         </div>
                         <button id="connectBtn" class="btn-primary py-2 px-4 text-sm">
                             Connect Facebook
@@ -242,20 +280,36 @@
                     <div class="bg-[var(--bg)] rounded-xl p-4 mb-4 border border-[var(--border)]">
                         <textarea 
                             id="postContent" 
-                            class="w-full bg-transparent border-none outline-none text-[var(--fg)] resize-none min-h-[120px]" 
-                            placeholder="What do you want to share?"
+                            class="w-full bg-transparent border-none outline-none text-[var(--fg)] resize-none min-h-[120px] text-sm" 
+                            placeholder="What's on your mind?"
                         ></textarea>
                         <div class="flex items-center justify-between pt-3 border-t border-[var(--border)]">
-                            <div class="text-sm text-[var(--muted)]" id="charCounter">0 / 63,206</div>
+                            <div class="flex gap-2">
+                                <button class="p-2 rounded-lg hover:bg-[var(--card)] text-[var(--muted)] transition-colors" title="Add Photo">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                </button>
+                            </div>
+                            <div class="text-xs text-[var(--muted)]" id="charCounter">0 / 63,206</div>
                         </div>
                     </div>
+                    
+                    <input type="hidden" id="imageURL" placeholder="Optional: Paste Image URL">
 
-                    <!-- Action Buttons -->
                     <div class="flex gap-3 mt-6">
                         <button id="publishBtn" class="btn-primary flex-1 opacity-50 cursor-not-allowed" disabled>
-                            <svg class="inline w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-                            Publish Now
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                            Publish to Feed
                         </button>
+                    </div>
+                    
+                    <!-- Info Box -->
+                    <div class="mt-6 p-4 rounded-xl bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--muted)]">
+                        <p class="font-bold mb-1 text-[var(--fg)]">How it works:</p>
+                        <ol class="list-decimal list-inside space-y-1">
+                            <li>Click "Connect Facebook" to login.</li>
+                            <li>Write your post content.</li>
+                            <li>Click "Publish to Feed" - a Facebook popup will confirm the post.</li>
+                        </ol>
                     </div>
                 </div>
             </section>
@@ -269,30 +323,31 @@
     </div>
 
     <script>
-        // 1. STATE MANAGEMENT
+        // 1. STATE
         let isConnected = false;
-        let userProfile = null;
+        const APP_ID = '880907771649624'; // Hardcoded
 
         // 2. DOM ELEMENTS
         const connectBtn = document.getElementById('connectBtn');
         const publishBtn = document.getElementById('publishBtn');
         const postContent = document.getElementById('postContent');
         const statusDot = document.getElementById('statusDot');
+        const statusDotSidebar = document.getElementById('statusDotSidebar');
         const statusText = document.getElementById('statusText');
+        const statusTextSidebar = document.getElementById('statusTextSidebar');
         const toast = document.getElementById('toast');
         const charCounter = document.getElementById('charCounter');
 
-        // 3. FACEBOOK SDK SETUP
-        // This function runs when the Facebook SDK loads
+        // 3. FACEBOOK SDK INITIALIZATION
         window.fbAsyncInit = function() {
             FB.init({
-                appId      : 'YOUR_APP_ID', // REPLACE THIS WITH YOUR REAL APP ID
+                appId      : APP_ID,
                 cookie     : true,
                 xfbml      : true,
                 version    : 'v18.0'
             });
             
-            // Check login status on load
+            FB.AppEvents.logPageView();
             checkLoginState();
         };
 
@@ -307,10 +362,8 @@
         function statusChangeCallback(response) {
             if (response.status === 'connected') {
                 isConnected = true;
-                // Get user name
-                FB.api('/me', function(response) {
-                    userProfile = response;
-                    updateUI(true, response.name);
+                FB.api('/me', {fields: 'name, picture'}, function(user) {
+                    updateUI(true, user.name, user.picture?.data?.url);
                 });
             } else {
                 isConnected = false;
@@ -318,21 +371,32 @@
             }
         }
 
-        function updateUI(connected, name = 'User') {
+        function updateUI(connected, name = 'User', avatar = '') {
             if (connected) {
+                const statusHtml = `Connected as <span class="text-[var(--accent)] font-semibold">${name}</span>`;
+                statusText.innerHTML = statusHtml;
+                statusTextSidebar.textContent = `Logged in`;
+                
                 statusDot.classList.add('connected');
-                statusText.textContent = `Connected as ${name}`;
-                connectBtn.textContent = 'Disconnect';
+                statusDotSidebar.classList.add('connected');
+                
+                connectBtn.textContent = 'Logout';
                 connectBtn.classList.remove('btn-primary');
                 connectBtn.classList.add('btn-secondary');
+                
                 publishBtn.disabled = false;
                 publishBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
-                statusDot.classList.remove('connected');
                 statusText.textContent = 'Not Connected';
+                statusTextSidebar.textContent = 'Not logged in';
+                
+                statusDot.classList.remove('connected');
+                statusDotSidebar.classList.remove('connected');
+                
                 connectBtn.textContent = 'Connect Facebook';
                 connectBtn.classList.add('btn-primary');
                 connectBtn.classList.remove('btn-secondary');
+                
                 publishBtn.disabled = true;
                 publishBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
@@ -343,31 +407,31 @@
             const msgEl = document.getElementById('toastMessage');
             msgEl.textContent = message;
             toastEl.classList.toggle('success', success);
+            toastEl.classList.toggle('error', !success);
             toastEl.classList.add('show');
-            setTimeout(() => toastEl.classList.remove('show'), 3000);
+            setTimeout(() => toastEl.classList.remove('show'), 4000);
         }
 
         // 5. EVENT LISTENERS
 
-        // Connect/Disconnect Button
+        // Connect/Disconnect
         connectBtn.addEventListener('click', () => {
             if (isConnected) {
                 FB.logout(function(response) {
                     statusChangeCallback(response);
                 });
             } else {
-                // 'public_profile' is basic info. 'publish_actions' is needed for posting (requires App Review)
                 FB.login(function(response) {
                     if (response.authResponse) {
                         statusChangeCallback(response);
                     } else {
-                        showToast('Connection cancelled', false);
+                        showToast('Login cancelled or failed', false);
                     }
-                }, {scope: 'public_profile,publish_actions'}); 
+                }, {scope: 'public_profile,email'}); 
             }
         });
 
-        // Publish Button
+        // Publish
         publishBtn.addEventListener('click', () => {
             const message = postContent.value;
             
@@ -376,38 +440,30 @@
                 return;
             }
 
-            // Use Feed Dialog for posting (Works without App Review for testing)
-            // Note: 'publish_actions' is restricted. Using Share dialog is safer for general apps.
+            // Method 1: Using Share Dialog (Works without App Review)
+            // This opens a popup to confirm.
             FB.ui({
-                method: 'share',
-                href: 'https://developers.facebook.com/docs/', // Can be replaced with a link you want to share
-                quote: message // Pre-fill text (Works on mobile/web dialogs)
+                method: 'feed',
+                link: window.location.href, // Link to your website
+                picture: document.getElementById('imageURL').value || undefined,
+                name: 'MetaPost Update',
+                description: message,
+                caption: ' ',
             }, function(response){
-                if (response && !response.error_message) {
-                    showToast('Posted to Facebook successfully!');
+                if (response && response.post_id) {
+                    showToast('Successfully posted to Facebook!');
                     postContent.value = '';
+                    charCounter.textContent = '0 / 63,206';
                 } else {
-                    showToast('Post cancelled or failed', false);
+                    showToast('Posting cancelled', false);
                 }
             });
-
-            /* 
-               ALTERNATIVE: Direct API Post (Requires approved 'publish_actions' permission)
-               FB.api('/me/feed', 'post', { message: message }, function(response) {
-                 if (!response || response.error) {
-                   showToast('Error posting: ' + response.error.message, false);
-                 } else {
-                   showToast('Posted successfully! Post ID: ' + response.id);
-                 }
-               });
-            */
         });
 
-        // Character counter
+        // Character Counter
         postContent.addEventListener('input', (e) => {
             charCounter.textContent = `${e.target.value.length} / 63,206`;
         });
-
     </script>
 </body>
 </html>
